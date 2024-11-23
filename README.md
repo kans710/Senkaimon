@@ -1,0 +1,1 @@
+# The improved RAG application with the help of ollama 
