@@ -15,11 +15,12 @@ warnings.filterwarnings('ignore')
 
 from IPython.display import display, Markdown
 
-# Set environment variable for protobuf
+# Set environment variafortniteble for protobuf
 import os
 os.environ["PROTOCOL_BUFFERS_PYTHON_IMPLEMENTATION"] = "python"
 
-local_path = "fortnite.pdf"
+
+local_path = "AI_Roadmap.pdf"
 if local_path:
     loader = UnstructuredPDFLoader(file_path=local_path)
     data = loader.load()
@@ -61,5 +62,34 @@ retriever = MultiQueryRetriever.from_llm(
     llm,
     prompt=QUERY_PROMPT
 )
-retriever_results = retriever.get_relevant_documents("What is the main idea of this document?")
-print("Retriever results:", retriever_results)
+# RAG prompt template
+template = """Answer the question based ONLY on the following context:
+{context}
+Question: {question}
+"""
+
+prompt = ChatPromptTemplate.from_template(template)
+
+# Create chain
+chain = (
+    {"context": retriever, "question": RunnablePassthrough()}
+    | prompt
+    | llm
+    | StrOutputParser()
+)
+
+def chat_with_pdf(question):
+    """
+    Chat with the PDF using the RAG chain.
+    """
+    return display(Markdown(chain.invoke(question)))
+
+# Example 1
+chat_with_pdf("What is this document about?")
+
+# Optional: Clean up when done 
+# vector_db.delete_collection()
+# print("Vector database deleted successfully")
+
+
+
