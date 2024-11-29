@@ -1,48 +1,55 @@
-# Imports
-from langchain_community.document_loaders import UnstructuredPDFLoader
-from langchain_ollama import OllamaEmbeddings
+from PyPDF2 import PdfReader
 from langchain_text_splitters import RecursiveCharacterTextSplitter
 from langchain_community.vectorstores import Chroma
 from langchain.prompts import ChatPromptTemplate, PromptTemplate
 from langchain_core.output_parsers import StrOutputParser
 from langchain_ollama.chat_models import ChatOllama
+from langchain_ollama import OllamaEmbeddings
 from langchain_core.runnables import RunnablePassthrough
 from langchain.retrievers.multi_query import MultiQueryRetriever
-
-# Suppress warnings
-import warnings
-warnings.filterwarnings('ignore')
-
-from IPython.display import display, Markdown
-
-# Set environment variafortniteble for protobuf
+from langchain.schema import Document
 import os
+from IPython.display import display, Markdown
+import warnings
+
+warnings.filterwarnings("ignore")
+
+# Set environment variable for protobuf
 os.environ["PROTOCOL_BUFFERS_PYTHON_IMPLEMENTATION"] = "python"
 
+# Extract text from the PDF using PyPDF2
+def extract_text_from_pdf(pdf_path):
+    reader = PdfReader(pdf_path)
+    text = ""
+    for page in reader.pages:
+        text += page.extract_text()
+    return text
 
 local_path = "AI_Roadmap.pdf"
 if local_path:
-    loader = UnstructuredPDFLoader(file_path=local_path)
-    data = loader.load()
+    pdf_text = extract_text_from_pdf(local_path)
     print(f"PDF loaded successfully: {local_path}")
 else:
     print("Upload a PDF file")
 
 # Split text into chunks
 text_splitter = RecursiveCharacterTextSplitter(chunk_size=1000, chunk_overlap=200)
-chunks = text_splitter.split_documents(data)
-print(f"Text split into {len(chunks)} chunks")
+chunks = text_splitter.split_text(pdf_text)
 
-# vector database
+# Wrap each chunk into a Document object
+documents = [Document(page_content=chunk) for chunk in chunks]
+print(f"Text split into {len(documents)} chunks")
+
+
 vector_db = Chroma.from_documents(
-    documents=chunks,
+    documents=documents,
     embedding=OllamaEmbeddings(model="nomic-embed-text"),
     collection_name="local-rag"
 )
 print("Vector database created successfully")
 
 # Set up LLM and retrieval
-local_model = "llama3.2" 
+local_model = "llama3.2"
 llm = ChatOllama(model=local_model)
 
 # Query prompt template
@@ -58,10 +65,11 @@ QUERY_PROMPT = PromptTemplate(
 
 # Set up retriever
 retriever = MultiQueryRetriever.from_llm(
-    vector_db.as_retriever(), 
+    vector_db.as_retriever(),
     llm,
     prompt=QUERY_PROMPT
 )
+
 # RAG prompt template
 template = """Answer the question based ONLY on the following context:
 {context}
@@ -87,9 +95,6 @@ def chat_with_pdf(question):
 # Example 1
 chat_with_pdf("What is this document about?")
 
-# Optional: Clean up when done 
+# Optional: Clean up when done
 # vector_db.delete_collection()
 # print("Vector database deleted successfully")
-
-
-
