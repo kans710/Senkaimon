@@ -200,5 +200,3 @@ Through this project, I gained hands-on experience with:
 ---
 
 
-
-Dronacharya Group of Institutions
