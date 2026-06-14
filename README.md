@@ -199,10 +199,6 @@ Through this project, I gained hands-on experience with:
 
 ---
 
-## Author
 
-Karan Singh
-
-B.Tech Computer Science (AI & ML)
 
 Dronacharya Group of Institutions
